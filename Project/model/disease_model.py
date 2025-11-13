@@ -5,7 +5,7 @@ from sklearn.metrics import accuracy_score
 import pickle
 
 # Load dataset
-df = pd.read_csv("Project\data\Training.csv")
+df = pd.read_csv("Project/data/Training.csv")
 
 # Separate features and labels
 X = df.drop(columns=["prognosis"])
