@@ -8,25 +8,24 @@
 </head>
 <body>
 
-    <div class="container">
+<div class="container">
+    <h2>Disease Prediction from Symptoms</h2>
 
-        <h2>Disease Prediction from Symptoms</h2>
+    <textarea id="symptomInput" placeholder="Describe your symptoms..."></textarea>
 
-        <textarea id="symptomInput" placeholder="Describe your symptoms..."></textarea>
+    <button onclick="predictDisease()">Predict Disease</button>
 
-        <button onclick="predictDisease()">Predict Disease</button>
+    <div id="resultBox" class="hidden result">
+        <h3>Prediction Result</h3>
 
-        <div id="resultBox" class="result hidden">
-            <h3>Prediction Result</h3>
-            <p><strong>Disease:</strong> <span id="disease"></span></p>
-            <p><strong>Description:</strong> <span id="description"></span></p>
-            
-            <p><strong>Precautions:</strong></p>
-            <ul id="precautions"></ul>
-        </div>
+        <p><strong>Disease:</strong> <span id="disease"></span></p>
+        <p><strong>Description:</strong> <span id="description"></span></p>
+
+        <p><strong>Precautions:</strong></p>
+        <ul id="precautions"></ul>
     </div>
+</div>
 
-    <script src="script.js"></script>
-
+<script src="script.js"></script>
 </body>
 </html>

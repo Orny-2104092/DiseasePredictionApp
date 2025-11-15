@@ -1,152 +1,167 @@
 from fastapi import FastAPI, Form, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 import pickle
 import numpy as np
 import re
 import os
+import pandas as pd
 
+# -----------------------------------------------------
+# INIT APP FIRST (very important!)
+# -----------------------------------------------------
 app = FastAPI(title="Disease Prediction API", version="1.0")
 
-# ---------------------------
-# CONFIG — path adjust করা যাবে যদি দরকার হয়
-# ---------------------------
-MODEL_PATH = "Project/model/disease_model.pkl"
-SYMPTOM_LIST_PATH = "Project/model/symptom_list.pkl"  # তুমি আগে যেভাবে save করেছো
-# ---------------------------
+# -----------------------------------------------------
+# ENABLE CORS BEFORE ANY ROUTES
+# -----------------------------------------------------
+origins = [
+    "http://127.0.0.1:5500",
+    "http://localhost:5500",
+    "http://127.0.0.1:3000",
+    "http://localhost:3000",
+    "http://127.0.0.1:8000",
+]
 
-# চেক করে নেই ফাইল আছে কি না
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# -----------------------------------------------------
+# LOAD MODEL + SYMPTOMS
+# -----------------------------------------------------
+MODEL_PATH = r"D:\DiseasePredictionApp\Project\model\disease_model.pkl"
+SYMPTOM_LIST_PATH = r"D:\DiseasePredictionApp\Project\model\symptom_list.pkl"
+
+
 if not os.path.exists(MODEL_PATH):
-    raise FileNotFoundError(f"MODEL NOT FOUND at: {MODEL_PATH}")
+    raise FileNotFoundError("Model missing: " + MODEL_PATH)
 
 if not os.path.exists(SYMPTOM_LIST_PATH):
-    raise FileNotFoundError(f"Symptom list not found: {SYMPTOM_LIST_PATH}")
+    raise FileNotFoundError("Symptom list missing: " + SYMPTOM_LIST_PATH)
 
-# মডেল লোড
 with open(MODEL_PATH, "rb") as f:
     model = pickle.load(f)
 
-# symptom list লোড (এই ফাইলে তোমার ডোমেনের সব symptom নাম থাকবে, এক per line)
 with open(SYMPTOM_LIST_PATH, "rb") as f:
-    try:
-        SYMPTOMS = pickle.load(f)
-    except Exception:
-        # যদি pickle না হয়, মুছে ফেলো — পরে পার্স করার জন্য
-        raise RuntimeError("Could not load symptom list (bad pickle).")
+    SYMPTOMS = pickle.load(f)
 
-# ensure it's a list
-if not isinstance(SYMPTOMS, (list, tuple)):
-    raise RuntimeError("SYMPTOMS must be a list of symptom names.")
+SYMPTOMS = [s.lower().strip() for s in SYMPTOMS]
 
-# Clean symptoms: lower + strip
-SYMPTOMS = [str(s).strip().lower() for s in SYMPTOMS]
-TOTAL_SYMPTOMS = len(SYMPTOMS)
-print(f"Total Symptoms Loaded: {TOTAL_SYMPTOMS}")
-
-# যদি মডেল এ feature names থাকে, সেই অনুযায়ী validate করব
+# Load features from model
 model_feature_names = None
 if hasattr(model, "feature_names_in_"):
-    model_feature_names = list(model.feature_names_in_)
-    # normalize
-    model_feature_names = [str(x).strip().lower() for x in model_feature_names]
-    print(f"Loaded feature names from model: {len(model_feature_names)} features.")
+    model_feature_names = [s.lower().strip() for s in model.feature_names_in_]
 
-# preprocessing helper
-def preprocess(text: str) -> str:
+# -----------------------------------------------------
+# CSV for description + precautions
+# -----------------------------------------------------
+BASE_DIR = r"D:\DiseasePredictionApp\Project"
+CSV_PATH = os.path.join(BASE_DIR, "data", "symptom_precaution.csv")
+
+print("CSV PATH:", CSV_PATH)  # debug
+
+details_df = pd.read_csv(CSV_PATH)
+
+print("Loaded columns:", details_df.columns.tolist())
+
+
+
+# -----------------------------------------------------
+# HELPERS
+# -----------------------------------------------------
+def preprocess(text):
     text = text.lower()
-    # punctuation বাদ
     text = re.sub(r"[^\w\s]", " ", text)
-    # multiple spaces -> single
-    text = re.sub(r"\s+", " ", text).strip()
-    return text
+    return re.sub(r"\s+", " ", text).strip()
 
-def build_vector_from_text(text: str):
-    """
-    Text থেকে SYMPTOMS লিস্ট ব্যবহার করে একটি binary vector বানাবে,
-    vector length হবে len(SYMPTOMS) (বা model_feature_names যদি সেটা ভিন্ন হয়)।
-    """
+
+def build_vector_from_text(text):
     text = preprocess(text)
     found = []
-    # For phrase symptoms, check exact word/phrase presence
+
     for s in SYMPTOMS:
-        # compare normalized forms; symptoms may have underscores in saved list
-        normalized_sym = s.replace("_", " ").strip()
-        if normalized_sym and ((" " + normalized_sym + " ") in (" " + text + " ") or normalized_sym in text.split()):
+        normalized = s.replace("_", " ")
+        if normalized in text:
             found.append(s)
-    # Build vector aligned to SYMPTOMS order
+
     vec = [1 if s in found else 0 for s in SYMPTOMS]
     arr = np.array(vec).reshape(1, -1)
 
-    # If model expects a different order/columns (feature_names_in_), reorder/create accordingly
-    if model_feature_names is not None:
-        # build a vector aligned to model_feature_names
-        # create a dict symptom->value using SYMPTOMS order
-        symptom_to_val = {s: (1 if s in found else 0) for s in SYMPTOMS}
+    if model_feature_names:
+        mapping = {s: (1 if s in found else 0) for s in SYMPTOMS}
         aligned = []
-        for fname in model_feature_names:
-            # try direct match, then underscore/space variants
-            key = fname.strip().lower()
-            if key in symptom_to_val:
-                aligned.append(symptom_to_val[key])
-            else:
-                # fallback: if fname has spaces but SYMPTOMS has underscores
-                alt = key.replace(" ", "_")
-                if alt in symptom_to_val:
-                    aligned.append(symptom_to_val[alt])
-                else:
-                    # If feature not in symptom list, assume 0
-                    aligned.append(0)
+        for name in model_feature_names:
+            key = name.replace(" ", "_")
+            aligned.append(mapping.get(key, 0))
         arr = np.array(aligned).reshape(1, -1)
+
     return arr, found
 
+
+# -----------------------------------------------------
+# ROUTES
+# -----------------------------------------------------
 @app.get("/")
 def home():
-    return {"message": "Hello! FastAPI is running successfully ✅"}
+    return {"message": "FastAPI running"}
 
 @app.post("/predict_text")
 def predict_text(user_input: str = Form(...)):
-    """
-    Receives form-data field 'user_input' (string).
-    Returns predicted disease, probability, and matched symptoms.
-    """
-    if not isinstance(user_input, str) or user_input.strip() == "":
-        raise HTTPException(status_code=422, detail="user_input must be a non-empty string.")
-
     arr, matched = build_vector_from_text(user_input)
 
-    # safety check: feature length must match model expectation
-    expected = None
-    try:
-        # sklearn stores n_features_in_ after fit
-        expected = getattr(model, "n_features_in_", None)
-        if expected is None and hasattr(model, "feature_names_in_"):
-            expected = len(model.feature_names_in_)
-    except Exception:
-        expected = None
-
-    if expected is not None and arr.shape[1] != expected:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Feature-length mismatch: vector has {arr.shape[1]} features, model expects {expected}."
-        )
-
-    # predict
-    try:
-        # if predict_proba available, use it for probability
-        if hasattr(model, "predict_proba"):
-            probs = model.predict_proba(arr)
-            # argmax index gives predicted class index
-            idx = np.argmax(probs, axis=1)[0]
-            pred_label = model.classes_[idx] if hasattr(model, "classes_") else str(idx)
-            pred_prob = float(probs[0][idx])
-        else:
-            pred = model.predict(arr)
-            pred_label = str(pred[0])
-            pred_prob = None
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Model prediction error: {e}")
+    if hasattr(model, "predict_proba"):
+        probs = model.predict_proba(arr)
+        idx = np.argmax(probs)
+        pred = model.classes_[idx]
+        prob = float(probs[0][idx])
+    else:
+        pred = model.predict(arr)[0]
+        prob = None
 
     return {
         "user_input": user_input,
-        "predicted_disease": str(pred_label),
-        "probability": pred_prob,
-        "matched_symptoms": matched
+        "predicted_disease": pred,
+        "probability": prob,
+        "matched_symptoms": matched,
+    }
+
+
+@app.get("/get_details")
+def get_details(disease: str):
+
+    # Normalize all column names
+    df = details_df.rename(columns=lambda x: x.strip().lower())
+
+    # ensure disease column exists
+    if "disease" not in df.columns:
+        return {"error": "CSV missing 'Disease' column", "columns": list(df.columns)}
+
+    # match disease
+    row = df[df["disease"].str.strip().str.lower() == disease.lower()]
+
+    if row.empty:
+        return {
+            "disease": disease,
+            "description": "No description found",
+            "precautions": []
+        }
+
+    item = row.iloc[0]
+
+    # extract precautions safely
+    precautions = [
+        item.get("precaution_1", ""),
+        item.get("precaution_2", ""),
+        item.get("precaution_3", ""),
+        item.get("precaution_4", ""),
+    ]
+
+    return {
+        "disease": disease,
+        "description": item.get("description", "No description found"),
+        "precautions": precautions
     }
