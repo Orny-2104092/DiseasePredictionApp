@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Disease Prediction System</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div class="container">
+
+        <h2>Disease Prediction from Symptoms</h2>
+
+        <textarea id="symptomInput" placeholder="Describe your symptoms..."></textarea>
+
+        <button onclick="predictDisease()">Predict Disease</button>
+
+        <div id="resultBox" class="result hidden">
+            <h3>Prediction Result</h3>
+            <p><strong>Disease:</strong> <span id="disease"></span></p>
+            <p><strong>Description:</strong> <span id="description"></span></p>
+            
+            <p><strong>Precautions:</strong></p>
+            <ul id="precautions"></ul>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+
+</body>
+</html>
