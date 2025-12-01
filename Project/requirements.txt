@@ -1,0 +1,15 @@
+fastapi
+uvicorn[standard]
+databases[postgresql]    # async DB access
+sqlalchemy>=1.4
+passlib[bcrypt]
+python-dotenv
+pyjwt
+python-dateutil
+numpy
+pandas
+scikit-learn
+psycopg2
+pydantic[email]
+python-multipart
+psycopg2-binary
