@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Sign In — SAO Health</title>
+  <style>
+    body{font-family:Arial,Helvetica,sans-serif;display:flex;height:100vh;align-items:center;justify-content:center;background:#071021;color:#fff}
+    .card{background:#071827;padding:24px;border-radius:8px;min-width:320px}
+    .card input{width:100%;margin:8px 0;padding:10px;border-radius:6px;border:1px solid #233246;background:#02111a;color:#fff}
+    .btn{display:inline-block;padding:10px 14px;border-radius:6px;background:#00d4ff;color:#04202a;font-weight:700;text-decoration:none;border:none;cursor:pointer}
+    .muted{color:#9aa8b8;font-size:13px;margin-top:8px}
+  </style>
+</head>
+<body>
+  <form id="signinForm" class="card">
+    <h3>Sign In</h3>
+    <input id="email" name="email" type="email" placeholder="Email" required />
+    <input id="password" name="password" type="password" placeholder="Password" required />
+    <div style="display:flex;gap:8px;align-items:center">
+      <button class="btn" type="submit">Sign In</button>
+      <a href="register.html" style="color:#9aa8b8;text-decoration:none">Register</a>
+    </div>
+    <div id="msg" class="muted"></div>
+  </form>
+
+<script>
+const API_BASE = "http://127.0.0.1:8000";
+document.getElementById("signinForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const email = document.getElementById("email").value.trim();
+  const password = document.getElementById("password").value;
+  document.getElementById("msg").innerText = "Signing in...";
+  try {
+    const res = await fetch(API_BASE + "/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password })
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      document.getElementById("msg").innerText = data.detail || JSON.stringify(data);
+      return;
+    }
+    // on success, token or user data returned
+    document.getElementById("msg").innerText = "Signed in.";
+    // save token (example)
+    if (data.access_token) localStorage.setItem("sao_token", data.access_token);
+    // then redirect to app
+    window.location.href = "index.html";
+  } catch (err) {
+    document.getElementById("msg").innerText = "Network error";
+    console.error(err);
+  }
+});
+</script>
+</body>
+</html>

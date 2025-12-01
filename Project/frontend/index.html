@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Disease Prediction System</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="app-shell">
+    <!-- Sidebar: history / new chat (collapsible) -->
+    <aside id="sidebar" class="sidebar open">
+        <div class="sidebar-top">
+            <div class="brand">SAO Health</div>
+            <button id="collapseBtn" class="icon-btn" title="Collapse">≡</button>
+        </div>
+
+        <div class="sidebar-controls">
+            <button id="newChatBtn" class="btn small">+ New Chat</button>
+        </div>
+
+        <nav id="chatList" class="chat-list">
+            <!-- history items go here -->
+        </nav>
+
+        <div class="sidebar-footer">
+            <small class="muted">Designed like ChatGPT — your symptom history</small>
+        </div>
+    </aside>
+
+    <main class="main">
+        <header class="main-header">
+            <div id="currentTitle" class="title">New chat</div>
+            <div class="header-actions">
+                <a class="btn" href="landing.html">Back to Landing</a>
+            </div>
+        </header>
+
+        <!-- Quick Predict panel (legacy UI adapted to new layout) -->
+        <section id="quickPredict" class="quick-panel">
+            <div class="container-mini">
+                <h3>Disease Prediction (Quick)</h3>
+
+                <!-- keep old textarea id so legacy code can reuse it -->
+                <textarea id="symptomInput" placeholder="Describe your symptoms..."></textarea>
+
+                <div style="display:flex;gap:10px;margin-top:10px">
+                  <button class="btn" onclick="predictDisease()">Predict Disease</button>
+                  <button class="btn outline" onclick="document.getElementById('quickPredict').classList.toggle('hidden')">Close</button>
+                </div>
+
+                <div id="resultBox" class="hidden result">
+                    <h4>Prediction Result</h4>
+
+                    <p><strong>Disease:</strong> <span id="disease"></span></p>
+                    <p><strong>Description:</strong> <span id="description"></span></p>
+
+                    <p><strong>Precautions:</strong></p>
+                    <ul id="precautions"></ul>
+                </div>
+            </div>
+        </section>
+
+        <section id="chatWindow" class="chat-window">
+            <!-- messages will be appended here -->
+            <div id="messages" class="messages"></div>
+        </section>
+
+
+        <div id="resultBox" class="hidden result">
+            <h4>Prediction Result</h4>
+
+                <p><strong>Disease:</strong> <span id="disease"></span></p>
+                <p><strong>Description:</strong> <span id="description"></span></p>
+
+                <p><strong>Precautions:</strong></p>
+                <ul id="precautions"></ul>
+        </div>
+
+        <footer class="composer">
+            <textarea id="chatInput" placeholder="Describe your symptoms or ask a question..." rows="2"></textarea>
+            <div class="composer-actions">
+                <button id="sendBtn" class="btn" onclick="predictDisease()">Send</button>
+            </div>
+        </footer>
+    </main>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
+<!--<div class="container">
+    <h2>Disease Prediction from Symptoms</h2>
+
+    <textarea id="symptomInput" placeholder="Describe your symptoms..."></textarea>
+
+    <button onclick="predictDisease()">Predict Disease</button>
+
+    <div id="resultBox" class="hidden result">
+        <h3>Prediction Result</h3>
+
+        <p><strong>Disease:</strong> <span id="disease"></span></p>
+        <p><strong>Description:</strong> <span id="description"></span></p>
+
+        <p><strong>Precautions:</strong></p>
+        <ul id="precautions"></ul>
+    </div>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
+-->

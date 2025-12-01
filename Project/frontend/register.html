@@ -1,0 +1,134 @@
+<!--<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Register — SAO Health</title>
+  <style>
+    body{font-family:Arial,Helvetica,sans-serif;display:flex;height:100vh;align-items:center;justify-content:center;background:#071021;color:#fff}
+    .card{background:#071827;padding:24px;border-radius:8px;min-width:320px}
+    .card input{width:100%;margin:8px 0;padding:10px;border-radius:6px;border:1px solid #233246;background:#02111a;color:#fff}
+    .btn{display:inline-block;padding:10px 14px;border-radius:6px;background:#00d4ff;color:#04202a;font-weight:700;text-decoration:none;border:none;cursor:pointer}
+    .muted{color:#9aa8b8;font-size:13px;margin-top:8px}
+  </style>
+</head>
+<body>
+  <form id="regForm" class="card">
+    <h3>Create account</h3>
+    <input id="name" name="name" type="text" placeholder="Full name" required />
+    <input id="email" name="email" type="email" placeholder="Email" required />
+    <input id="password" name="password" type="password" placeholder="Password" required />
+    <div style="display:flex;gap:8px;align-items:center">
+      <button class="btn" type="submit">Register</button>
+      <a href="signin.html" style="color:#9aa8b8;text-decoration:none">Sign in</a>
+    </div>
+    <div id="msg" class="muted"></div>
+  </form>
+
+<script>
+const API_BASE = "http://127.0.0.1:8000";
+document.getElementById("regForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const name = document.getElementById("name").value.trim();
+  const email = document.getElementById("email").value.trim();
+  const password = document.getElementById("password").value;
+  document.getElementById("msg").innerText = "Registering...";
+  try {
+    const res = await fetch(API_BASE + "/auth/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, email, password })
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      document.getElementById("msg").innerText = data.detail || JSON.stringify(data);
+      return;
+    }
+    document.getElementById("msg").innerText = "Registered. Redirecting to sign in...";
+    setTimeout(()=> window.location.href = "signin.html", 900);
+  } catch (err) {
+    document.getElementById("msg").innerText = "Network error";
+    console.error(err);
+  }
+});
+</script>
+</body>
+</html>-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Register — SAO Health</title>
+  <style>
+    body{font-family:Arial,Helvetica,sans-serif;display:flex;height:100vh;align-items:center;justify-content:center;background:#071021;color:#fff}
+    .card{background:#071827;padding:24px;border-radius:8px;min-width:320px}
+    .card input, .card select{width:100%;margin:8px 0;padding:10px;border-radius:6px;border:1px solid #233246;background:#02111a;color:#fff;box-sizing:border-box}
+    .card input::placeholder{color:#9aa8b8}
+    .btn{display:inline-block;padding:10px 14px;border-radius:6px;background:#00d4ff;color:#04202a;font-weight:700;text-decoration:none;border:none;cursor:pointer}
+    .muted{color:#9aa8b8;font-size:13px;margin-top:8px}
+    .error{color:#ff6b6b}
+    .success{color:#51cf66}
+  </style>
+</head>
+<body>
+  <form id="regForm" class="card">
+    <h3>Create account</h3>
+    <input id="fullName" name="fullName" type="text" placeholder="Full name" required />
+    <input id="email" name="email" type="email" placeholder="Email" required />
+    <input id="password" name="password" type="password" placeholder="Password" required />
+    <input id="dob" name="dob" type="date" required />
+    <select id="gender" name="gender" required>
+      <option value="">Select gender</option>
+      <option value="Male">Male</option>
+      <option value="Female">Female</option>
+      <option value="Other">Other</option>
+    </select>
+    <input id="nationality" name="nationality" type="text" placeholder="Nationality" required />
+    <div style="display:flex;gap:8px;align-items:center">
+      <button class="btn" type="submit">Register</button>
+      <a href="signin.html" style="color:#9aa8b8;text-decoration:none">Sign in</a>
+    </div>
+    <div id="msg" class="muted"></div>
+  </form>
+
+<script>
+const API_BASE = "http://127.0.0.1:8000";
+document.getElementById("regForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const fullName = document.getElementById("fullName").value.trim();
+  const email = document.getElementById("email").value.trim();
+  const password = document.getElementById("password").value;
+  const dob = document.getElementById("dob").value;
+  const gender = document.getElementById("gender").value;
+  const nationality = document.getElementById("nationality").value.trim();
+  
+  document.getElementById("msg").innerText = "Registering...";
+try {
+  const res = await fetch(API_BASE + "/auth/register", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ fullName, email, password, dob, gender, nationality })
+  });
+  
+  const data = await res.json();
+  
+  if (!res.ok) {
+    document.getElementById("msg").innerText = data.detail || data.message || JSON.stringify(data);
+    document.getElementById("msg").className = "muted error";
+    console.error("Server error:", data);
+    return;
+  }
+  
+  document.getElementById("msg").innerText = "Registered. Redirecting to sign in...";
+  document.getElementById("msg").className = "muted success";
+  setTimeout(() => window.location.href = "signin.html", 900);
+} catch (err) {
+  document.getElementById("msg").innerText = "Network error: " + err.message;
+  document.getElementById("msg").className = "muted error";
+  console.error("Error:", err);
+}
+});
+</script>
+</body>
+</html>

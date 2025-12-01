@@ -1,0 +1,123 @@
+/* Minimal styles + hero animation */
+:root{
+  --bg:#0f1724;
+  --card:#0b1220;
+  --accent:#00d4ff;
+  --muted:#9aa8b8;
+  --white:#f8fbff;
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0;
+  font-family:Inter,system-ui,Segoe UI,Roboto,"Helvetica Neue",Arial;
+  background:linear-gradient(180deg,#071021 0%, var(--bg) 100%);
+  color:var(--white);
+  min-height:100vh;
+}
+
+/* topbar */
+.topbar{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:18px 28px;
+  backdrop-filter: blur(6px);
+}
+.topbar .brand{
+  font-weight:700;
+  letter-spacing:1px;
+}
+.topbar nav a{
+  margin-left:12px;
+  text-decoration:none;
+  color:var(--white);
+  padding:8px 12px;
+  border-radius:6px;
+  border:1px solid transparent;
+}
+.topbar nav a.primary{
+  background:linear-gradient(90deg,var(--accent),#7be1ff);
+  color:#04202a;
+  font-weight:600;
+}
+
+/* hero */
+.hero{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  height:70vh;
+  text-align:center;
+  padding:24px;
+}
+.logo-anim{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:12px;
+  margin-bottom:18px;
+}
+.logo-anim .sao, .logo-anim .health{
+  font-size:48px;
+  font-weight:800;
+  letter-spacing:2px;
+  padding:18px 26px;
+  border-radius:12px;
+  transform-origin:center;
+}
+
+/* animated gradient blocks */
+.logo-anim .sao{
+  background:linear-gradient(90deg,#1de9b6,#00d4ff);
+  color:#04202a;
+  animation: floatA 3s ease-in-out infinite;
+}
+.logo-anim .health{
+  background:linear-gradient(90deg,#7c4dff,#00b0ff);
+  color:#fff;
+  animation: floatB 3s ease-in-out infinite;
+}
+
+@keyframes floatA{
+  0%{transform: translateY(0) rotate(-4deg) scale(1)}
+  50%{transform: translateY(-12px) rotate(0deg) scale(1.02)}
+  100%{transform: translateY(0) rotate(-4deg) scale(1)}
+}
+@keyframes floatB{
+  0%{transform: translateY(0) rotate(4deg) scale(1)}
+  50%{transform: translateY(12px) rotate(0deg) scale(1.02)}
+  100%{transform: translateY(0) rotate(4deg) scale(1)}
+}
+
+.subtitle{
+  color:var(--muted);
+  margin:8px 0 18px;
+  font-size:18px;
+}
+
+.hero-cta .btn{
+  margin:0 8px;
+  text-decoration:none;
+  padding:12px 18px;
+  border-radius:10px;
+  display:inline-block;
+}
+.btn.big{
+  background:linear-gradient(90deg,var(--accent),#7be1ff);
+  color:#04202a;
+  font-weight:700;
+}
+.btn.outline{
+  color:var(--white);
+  border:1px solid rgba(255,255,255,0.08);
+}
+
+/* about */
+.about{
+  padding:36px 24px;
+  background:transparent;
+  max-width:900px;
+  margin:0 auto 64px;
+  color:var(--muted);
+}
