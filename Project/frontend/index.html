@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Disease Prediction System</title>
+    <title>Disease Prediction System - SAO Health</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -19,95 +19,157 @@
             <button id="newChatBtn" class="btn small">+ New Chat</button>
         </div>
 
-        <nav id="chatList" class="chat-list">
-            <!-- history items go here -->
-        </nav>
+        <div id="chatList" class="chat-list">
+            <!-- Chat history items will be loaded here -->
+        </div>
 
         <div class="sidebar-footer">
-            <small class="muted">Designed like ChatGPT — your symptom history</small>
+            <div class="user-mini" id="userMini">
+                <div class="user-avatar" id="userAvatar">?</div>
+                <div class="user-info">
+                    <div class="user-name" id="userName">Loading...</div>
+                    <button id="profileBtn" class="btn-link" onclick="showProfileModal()">View Profile</button>
+                </div>
+            </div>
         </div>
     </aside>
 
     <main class="main">
         <header class="main-header">
-            <div id="currentTitle" class="title">New chat</div>
+            <div id="currentChatTitle" class="title">New chat</div>
             <div class="header-actions">
+                <button id="toggleSidebarBtn" class="icon-btn" onclick="toggleSidebar()">≡</button>
                 <a class="btn" href="landing.html">Back to Landing</a>
+                <button id="logoutBtn" class="btn outline" onclick="logout()">Logout</button>
             </div>
         </header>
 
-        <!-- Quick Predict panel (legacy UI adapted to new layout) -->
-        <section id="quickPredict" class="quick-panel">
-            <div class="container-mini">
-                <h3>Disease Prediction (Quick)</h3>
-
-                <!-- keep old textarea id so legacy code can reuse it -->
-                <textarea id="symptomInput" placeholder="Describe your symptoms..."></textarea>
-
-                <div style="display:flex;gap:10px;margin-top:10px">
-                  <button class="btn" onclick="predictDisease()">Predict Disease</button>
-                  <button class="btn outline" onclick="document.getElementById('quickPredict').classList.toggle('hidden')">Close</button>
-                </div>
-
-                <div id="resultBox" class="hidden result">
-                    <h4>Prediction Result</h4>
-
-                    <p><strong>Disease:</strong> <span id="disease"></span></p>
-                    <p><strong>Description:</strong> <span id="description"></span></p>
-
-                    <p><strong>Precautions:</strong></p>
-                    <ul id="precautions"></ul>
-                </div>
-            </div>
-        </section>
-
+        <!-- Chat Window -->
         <section id="chatWindow" class="chat-window">
-            <!-- messages will be appended here -->
-            <div id="messages" class="messages"></div>
+            <div id="messages" class="messages">
+                <!-- Welcome message -->
+                <div class="msg assistant">
+                    <div class="msg-content">
+                        <p>Hello! I'm SAO Health Assistant. Describe your symptoms, and I'll help predict potential conditions and provide recommendations.</p>
+                        <p>For example: "I have fever, cough, and headache"</p>
+                    </div>
+                </div>
+            </div>
+            <!-- Typing indicator (hidden by default) -->
+            <div id="typingIndicator" class="typing-indicator hidden">
+                <span></span><span></span><span></span>
+            </div>
         </section>
 
-
-        <div id="resultBox" class="hidden result">
-            <h4>Prediction Result</h4>
-
-                <p><strong>Disease:</strong> <span id="disease"></span></p>
-                <p><strong>Description:</strong> <span id="description"></span></p>
-
-                <p><strong>Precautions:</strong></p>
-                <ul id="precautions"></ul>
-        </div>
-
+        <!-- Composer -->
         <footer class="composer">
-            <textarea id="chatInput" placeholder="Describe your symptoms or ask a question..." rows="2"></textarea>
-            <div class="composer-actions">
-                <button id="sendBtn" class="btn" onclick="predictDisease()">Send</button>
+            <div class="composer-container">
+                <textarea id="chatInput" placeholder="Describe your symptoms or ask a question..." rows="1"></textarea>
+                <button id="sendBtn" class="send-btn" onclick="sendMessage()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M22 2L11 13M22 2L15 22L11 13M22 2L2 9L11 13"/>
+                    </svg>
+                </button>
             </div>
+            <div class="composer-hint">AI predictions are for informational purposes only. Always consult a healthcare professional.</div>
         </footer>
     </main>
 </div>
 
-<script src="script.js"></script>
-</body>
-</html>
-<!--<div class="container">
-    <h2>Disease Prediction from Symptoms</h2>
-
-    <textarea id="symptomInput" placeholder="Describe your symptoms..."></textarea>
-
-    <button onclick="predictDisease()">Predict Disease</button>
-
-    <div id="resultBox" class="hidden result">
-        <h3>Prediction Result</h3>
-
-        <p><strong>Disease:</strong> <span id="disease"></span></p>
-        <p><strong>Description:</strong> <span id="description"></span></p>
-
-        <p><strong>Precautions:</strong></p>
-        <ul id="precautions"></ul>
+<!-- User Profile Modal -->
+<div id="profileModal" class="modal hidden">
+    <div class="modal-overlay" onclick="closeProfileModal()"></div>
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>User Profile</h2>
+            <button class="modal-close" onclick="closeProfileModal()">×</button>
+        </div>
+        <div class="modal-body">
+            <div class="profile-section">
+                <div class="profile-avatar" id="profileAvatar">?</div>
+                <div class="profile-stats">
+                    <div class="stat-card">
+                        <div class="stat-value" id="statChats">0</div>
+                        <div class="stat-label">Chats</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="statMessages">0</div>
+                        <div class="stat-label">Messages</div>
+                    </div>
+                </div>
+            </div>
+            <form id="profileForm" onsubmit="updateProfile(event)">
+                <div class="form-group">
+                    <label for="profileName">Full Name</label>
+                    <input type="text" id="profileName" name="fullName">
+                </div>
+                <div class="form-group">
+                    <label for="profileEmail">Email</label>
+                    <input type="email" id="profileEmail" name="email" readonly>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="profileDob">Date of Birth</label>
+                        <input type="date" id="profileDob" name="dob">
+                    </div>
+                    <div class="form-group">
+                        <label for="profileGender">Gender</label>
+                        <select id="profileGender" name="gender">
+                            <option value="">Select...</option>
+                            <option value="male">Male</option>
+                            <option value="female">Female</option>
+                            <option value="other">Other</option>
+                            <option value="prefer_not_to_say">Prefer not to say</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="profileNationality">Nationality</label>
+                    <input type="text" id="profileNationality" name="nationality">
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn">Save Changes</button>
+                    <button type="button" class="btn outline" onclick="showPasswordModal()">Change Password</button>
+                </div>
+            </form>
+        </div>
     </div>
 </div>
 
+<!-- Password Change Modal -->
+<div id="passwordModal" class="modal hidden">
+    <div class="modal-overlay" onclick="closePasswordModal()"></div>
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Change Password</h2>
+            <button class="modal-close" onclick="closePasswordModal()">×</button>
+        </div>
+        <div class="modal-body">
+            <form id="passwordForm" onsubmit="changePassword(event)">
+                <div class="form-group">
+                    <label for="currentPassword">Current Password</label>
+                    <input type="password" id="currentPassword" name="currentPassword" required>
+                </div>
+                <div class="form-group">
+                    <label for="newPassword">New Password</label>
+                    <input type="password" id="newPassword" name="newPassword" required minlength="8">
+                </div>
+                <div class="form-group">
+                    <label for="confirmPassword">Confirm New Password</label>
+                    <input type="password" id="confirmPassword" name="confirmPassword" required minlength="8">
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn">Update Password</button>
+                    <button type="button" class="btn outline" onclick="closePasswordModal()">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Toast Notification -->
+<div id="toast" class="toast hidden"></div>
+
 <script src="script.js"></script>
 </body>
 </html>
--->
