@@ -42,11 +42,12 @@ document.getElementById("signinForm").addEventListener("submit", async (e) => {
       document.getElementById("msg").innerText = data.detail || JSON.stringify(data);
       return;
     }
-    // on success, token or user data returned
     document.getElementById("msg").innerText = "Signed in.";
-    // save token (example)
-    if (data.access_token) localStorage.setItem("sao_token", data.access_token);
-    // then redirect to app
+    console.log("Login response:", data);
+    localStorage.setItem("sao_token", data.access_token);
+    if (data.user) localStorage.setItem("sao_user", JSON.stringify(data.user));
+    console.log("Token stored:", localStorage.getItem("sao_token"));
+    console.log("User stored:", localStorage.getItem("sao_user"));
     window.location.href = "index.html";
   } catch (err) {
     document.getElementById("msg").innerText = "Network error";
