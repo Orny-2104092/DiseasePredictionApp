@@ -2,7 +2,8 @@ fastapi
 uvicorn[standard]
 databases[postgresql]    # async DB access
 sqlalchemy>=1.4
-passlib[bcrypt]
+passlib[bcrypt]==1.7.4
+bcrypt<5.0.0
 python-dotenv
 pyjwt
 python-dateutil
@@ -13,3 +14,9 @@ psycopg2
 pydantic[email]
 python-multipart
 psycopg2-binary
+
+# Testing dependencies
+pytest
+pytest-asyncio
+httpx
+pytest-cov
