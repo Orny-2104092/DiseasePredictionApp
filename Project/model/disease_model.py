@@ -25,7 +25,7 @@ print("✅ Model trained successfully!")
 print("Accuracy:", acc)
 
 # Save model
-with open("disease_model.pkl", "wb") as file:
+with open("Project/model/disease_model.pkl", "wb") as file:
     pickle.dump(model, file)
 
 print("💾 Model saved as disease_model.pkl")
