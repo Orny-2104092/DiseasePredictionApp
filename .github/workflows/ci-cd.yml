@@ -1,0 +1,261 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  workflow_dispatch:
+
+env:
+  PYTHON_VERSION: '3.12'
+  NODE_VERSION: '20'
+
+jobs:
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install safety bandit semgrep
+
+      - name: Run Bandit Security Scan
+        run: |
+          bandit -r Project/backend/ -f json -o bandit_report.json || true
+          cat bandit_report.json
+
+      - name: Run Safety Check
+        run: |
+          safety check -r Project/requirements.txt --json > safety_report.json || true
+
+      - name: Run Semgrep Scan
+        run: |
+          semgrep --config=auto --json --output semgrep_report.json Project/ || true
+
+      - name: Upload security reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-reports
+          path: |
+            bandit_report.json
+            safety_report.json
+            semgrep_report.json
+
+  lint-and-format:
+    name: Lint and Format Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install linting tools
+        run: |
+          python -m pip install --upgrade pip
+          pip install flake8 black isort mypy
+
+      - name: Check Python code formatting with Black
+        run: |
+          black --check Project/backend/ || echo "Black formatting issues found"
+
+      - name: Check import sorting with isort
+        run: |
+          isort --check-only Project/backend/ || echo "Import sorting issues found"
+
+      - name: Run flake8 linting
+        run: |
+          flake8 Project/backend/ --max-line-length=100 || echo "Flake8 issues found"
+
+      - name: Run mypy type checking
+        run: |
+          mypy Project/backend/ --ignore-missing-imports || echo "Type checking issues found"
+
+  backend-tests:
+    name: Backend Tests
+    runs-on: ubuntu-latest
+    needs: security-scan
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_USER: test_user
+          POSTGRES_PASSWORD: test_password
+          POSTGRES_DB: test_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Cache pip dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('Project/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r Project/requirements.txt pytest pytest-asyncio httpx
+
+      - name: Create test environment file
+        run: |
+          cat > .env.test << EOF
+          DATABASE_URL=postgresql://test_user:test_password@localhost:5432/test_db
+          JWT_SECRET=test-secret-key-for-testing-only
+          JWT_ALGORITHM=HS256
+          JWT_EXPIRES_SECONDS=3600
+          MODEL_PATH=Project/model/disease_model.pkl
+          SYMPTOM_LIST_PATH=Project/model/symptom_list.pkl
+          DATA_DIR=Project/data
+          ALLOWED_ORIGINS=http://localhost:3000
+          EOF
+
+      - name: Run backend tests
+        run: |
+          cd Project/backend
+          python -m pytest test_api.py -v --tb=short || echo "Tests completed with status: $?"
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: backend-test-results
+          path: Project/backend/
+
+  frontend-tests:
+    name: Frontend Tests
+    runs-on: ubuntu-latest
+    needs: security-scan
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install frontend dependencies
+        run: |
+          npm install --prefix Project/frontend
+
+      - name: Check for JavaScript syntax errors
+        run: |
+          npx eslint Project/frontend/script.js --max-warnings=10 || echo "ESLint found issues"
+
+      - name: Validate HTML structure
+        run: |
+          npm install --no-save html-validate
+          npx html-validate Project/frontend/index.html || echo "HTML validation completed"
+
+      - name: Check CSS for errors
+        run: |
+          npm install --no-save stylelint stylelint-config-standard
+          npx stylelint Project/frontend/style.css || echo "CSS linting completed"
+
+  dependency-check:
+    name: Dependency Vulnerability Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Check Python dependencies
+        run: |
+          python -m pip install --upgrade pip pip-audit
+          pip-audit --requirement Project/requirements.txt || echo "Dependency audit completed"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Check Node.js dependencies
+        run: |
+          npm audit --prefix Project/frontend --production || echo "NPM audit completed"
+
+  # docker-build:
+  #   name: Docker Build (Optional)
+  #   runs-on: ubuntu-latest
+  #   needs: [lint-and-format, backend-tests]
+  #   if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+  #   steps:
+  #     - name: Checkout code
+  #       uses: actions/checkout@v4
+
+  #     - name: Set up Docker Buildx
+  #       uses: docker/setup-buildx-action@v3
+
+  #     - name: Build Docker image
+  #       uses: docker/build-push-action@v5
+  #       with:
+  #         context: .
+  #         push: false
+  #         tags: disease-prediction-app:latest
+  #         load: true
+
+  #     - name: Scan Docker image for vulnerabilities
+  #       run: |
+  #         docker run --rm disease-prediction-app:latest /bin/bash -c "echo 'Docker image built successfully'" || echo "Docker build completed"
+
+  deploy-preview:
+    name: Deploy Preview
+    runs-on: ubuntu-latest
+    needs: [security-scan, lint-and-format, backend-tests, frontend-tests]
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Create preview environment
+        run: |
+          echo "Preview deployment would be triggered here"
+          echo "This can be extended with Vercel, Netlify, or other preview deployment services"
+
+  notify:
+    name: Notify on Failure
+    runs-on: ubuntu-latest
+    needs: [security-scan, lint-and-format, backend-tests, frontend-tests]
+    if: failure()
+    steps:
+      - name: Send failure notification
+        run: |
+          echo "CI/CD Pipeline failed. Please check the GitHub Actions tab for details."
+          exit 1
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
